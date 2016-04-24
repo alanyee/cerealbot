@@ -1,4 +1,8 @@
-= Skybot =
+= cerealbot =
+
+Forked from skybot. Haven't really added anythig to it except for a few useless
+plugins.
+Meant to be extended by the #ucsd.
 
 ==Goals==
 * simplicity
@@ -8,6 +12,7 @@
 ** multithreading
 ** automatic reloading
 ** extensibility
+* spam
 
 ==Features==
 * Multithreaded dispatch and the ability to connect to multiple networks at a time.
@@ -18,9 +23,4 @@ To install dependencies, run:
 
     pip install -r requirements.txt
 
-Skybot runs on Python 2.7.
-
-==License==
-Skybot is public domain. If you find a way to make money using it, I'll be very impressed.
-
-See LICENSE for precise terms.
+cerealbot runs on Python 2.7.
