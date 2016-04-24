@@ -1,6 +1,7 @@
 from util import http, hook
 
 
+@hook.command('btc')
 @hook.command(autohelp=False)
 def bitcoin(inp, say=None):
     ".bitcoin -- gets current exchange rate for bitcoins from BTC-e"

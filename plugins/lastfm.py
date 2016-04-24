@@ -14,9 +14,10 @@ def lastfm(inp, chan='', nick='', reply=None, api_key=None, db=None):
     ".lastfm <username> [dontsave] | @<nick> -- gets current or last played " \
         "track from lastfm"
 
-    db.execute(
+    cur = db.cursor()
+    cur.execute(
         "create table if not exists "
-        "lastfm(chan, nick, user, primary key(chan, nick))"
+        "lastfm(chan text, nick text, user text, primary key(chan, nick))"
     )
 
     if inp[0:1] == '@':
@@ -31,7 +32,7 @@ def lastfm(inp, chan='', nick='', reply=None, api_key=None, db=None):
             user = user[:-9].strip().lower()
 
     if not user:
-        user = db.execute(
+        user = cur.execute(
             "select user from lastfm where chan=? and nick=lower(?)",
             (chan, nick)).fetchone()
         if not user:
@@ -76,7 +77,8 @@ def lastfm(inp, chan='', nick='', reply=None, api_key=None, db=None):
     reply(ret)
 
     if inp and not dontsave:
-        db.execute(
+        cur.execute(
             "insert or replace into lastfm(chan, nick, user) "
             "values (?, ?, ?)", (chan, nick.lower(), inp))
         db.commit()
+        cur.close()

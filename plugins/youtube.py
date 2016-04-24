@@ -7,40 +7,48 @@ from util import hook, http
 youtube_re = (r'(?:youtube.*?(?:v=|/v/)|youtu\.be/|yooouuutuuube.*?id=)'
               '([-_a-z0-9]+)', re.I)
 
-base_url = 'https://www.googleapis.com/youtube/v3/'
-info_url = base_url + 'videos?part=snippet,contentDetails,statistics'
-search_api_url = base_url + 'search'
+base_url = 'https://www.googleapis.com/youtube/v3/search'
+url = base_url + 'part=%s?v=2&alt=jsonc'
+search_api_url = base_url + 'videos?v=2&alt=jsonc&max-results=1'
 video_url = 'http://youtube.com/watch?v=%s'
 
 
-def get_video_description(vid_id, api_key):
-    j = http.get_json(info_url, id=vid_id, key=api_key)
+def get_video_description(vid_id):
+    j = http.get_json(url % vid_id)
 
-    if not j['pageInfo']['totalResults']:
+    if j.get('error'):
         return
 
-    j = j['items'][0]
+    j = j['data']
 
-    duration = j['contentDetails']['duration'].replace('PT', '').lower()
+    out = '\x02%s\x02' % j['title']
 
-    published = time.strptime(j['snippet']['publishedAt'],
-                              "%Y-%m-%dT%H:%M:%S.000Z")
-    published = time.strftime("%Y.%m.%d", published)
+    if not j.get('duration'):
+        return out
 
-    views = group_int_digits(j['statistics']['viewCount'], ',')
-    likes = j['statistics'].get('likeCount', 0)
-    dislikes = j['statistics'].get('dislikeCount', 0)
-    
-    out = (u'\x02{snippet[title]}\x02 - length \x02{duration}\x02 - '
-           u'{likes}\u2191{dislikes}\u2193 - '
-           u'\x02{views}\x02 views - '
-           u'\x02{snippet[channelTitle]}\x02 on \x02{published}\x02'
-          ).format(duration=duration, likes=likes, dislikes=dislikes, views=views, published=published, **j)
+    out += ' - length \x02'
+    length = j['duration']
+    if length / 3600:  # > 1 hour
+        out += '%dh ' % (length / 3600)
+    if length / 60:
+        out += '%dm ' % (length / 60 % 60)
+    out += "%ds\x02" % (length % 60)
 
-    # TODO: figure out how to detect NSFW videos
+    if 'rating' in j:
+        out += ' - rated \x02%.2f/5.0\x02 (%d)' % (j['rating'],
+                                                   j['ratingCount'])
+
+    if 'viewCount' in j:
+        out += ' - \x02%s\x02 views' % group_int_digits(j['viewCount'])
+
+    upload_time = time.strptime(j['uploaded'], "%Y-%m-%dT%H:%M:%S.000Z")
+    out += ' - \x02%s\x02 on \x02%s\x02' % (
+                        j['uploader'], time.strftime("%Y.%m.%d", upload_time))
+
+    if 'contentRating' in j:
+        out += ' - \x034NSFW\x02'
 
     return out
-
 
 def group_int_digits(number, delimiter=' ', grouping=3):
     base = str(number).strip()
@@ -51,38 +59,25 @@ def group_int_digits(number, delimiter=' ', grouping=3):
     builder.reverse()
     return delimiter.join(builder)
 
-
-@hook.api_key('google')
 @hook.regex(*youtube_re)
-def youtube_url(match, api_key=None):
-    return get_video_description(match.group(1), api_key)
+def youtube_url(match):
+    return get_video_description(match.group(1))
 
 
-@hook.api_key('google')
 @hook.command('yt')
 @hook.command('y')
 @hook.command
-def youtube(inp, api_key=None):
+def youtube(inp):
     '.youtube <query> -- returns the first YouTube search result for <query>'
 
-    params = {
-        'key': api_key,
-        'fields': 'items(id,snippet(channelId,title))',
-        'part': 'snippet',
-        'type': 'video',
-        'q': inp
-    }
-
-    j = http.get_json(search_api_url, **params)
+    j = http.get_json(search_api_url, q=inp)
 
     if 'error' in j:
         return 'error while performing the search'
 
-    results = j.get("items")
-
-    if not results:
+    if j['data']['totalItems'] == 0 or 'items' not in j['data']:
         return 'no results found'
 
-    vid_id = j['items'][0]['id']['videoId']
+    vid_id = j['data']['items'][0]['id']
 
-    return get_video_description(vid_id, api_key) + " - " + video_url % vid_id
+    return get_video_description(vid_id) + " - " + video_url % vid_id

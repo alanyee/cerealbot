@@ -30,6 +30,7 @@ def wolframalpha(inp, api_key=None):
 
     ret = '. '.join(pod_texts)
 
+    #print pod_texts
     if not pod_texts:
         return 'no results'
 

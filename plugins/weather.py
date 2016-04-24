@@ -4,18 +4,21 @@ from util import hook, http
 
 
 @hook.api_key('wunderground')
-@hook.command(autohelp=False)
+#@hook.command(autohelp=False)
 def weather(inp, chan='', nick='', reply=None, db=None, api_key=None):
-    ".weather <location> [dontsave] | @<nick> -- gets weather data from " \
-        "Wunderground http://wunderground.com/weather/api"
+    ".weather <location> [dontsave] | @<nick> -- gets weather data from Wunderground "\
+            "http://wunderground.com/weather/api"
 
     if not api_key:
         return None
 
     # this database is used by other plugins interested in user's locations,
     # like .near in tag.py
-    db.execute("create table if not exists "
-               "location(chan, nick, loc, lat, lon, primary key(chan, nick))")
+    cur = db.cursor()
+    cur.execute(
+        "create table location(chan text, nick text, loc text,"
+        " lat real, lon real, primary key(chan, nick));")
+    print("past db exec")
 
     if inp[0:1] == '@':
         nick = inp[1:].strip()
@@ -23,55 +26,41 @@ def weather(inp, chan='', nick='', reply=None, db=None, api_key=None):
         dontsave = True
     else:
         dontsave = inp.endswith(" dontsave")
-        # strip off the " dontsave" text if it exists and set it back to `inp`
-        # so we don't report it back to the user incorrectly
+        # strip off the " dontsave" text if it exists and set it back to `inp` so we don't report it
+        # back to the user incorrectly
         if dontsave:
             inp = inp[:-9].strip().lower()
         loc = inp
+    print("loc", loc, "dontsave", dontsave)
 
     if not loc:  # blank line
-        loc = db.execute(
-            "select loc from location where chan=? and nick=lower(?)",
-            (chan, nick)).fetchone()
+        cur.execute(
+            "select loc from location where chan=%s and nick=lower(%s);",
+            (chan, nick))
+        loc = cur.fetchone()
+        print "loc", loc
         if not loc:
-            try:
-                # grab from old-style weather database
-                loc = db.execute("select loc from weather where nick=lower(?)",
-                                 (nick,)).fetchone()
-            except db.OperationalError:
-                pass    # no such table
-            if not loc:
-                return weather.__doc__
+            print("loc not found")
+            return weather.__doc__
         loc = loc[0]
 
-    params = [http.quote(p.strip()) for p in loc.split(',')]
+    loc, _, state = loc.partition(', ')
 
-    loc = params[0]
-    state = ''
+    # Check to see if a lat, long pair is being passed. This could be done more
+    # completely with regex, and converting from DMS to decimal degrees. This
+    # is nice and simple, however.
+    try:
+        float(loc)
+        float(state)
 
-    # Try to interpret the query based on the number of commas.
-    # Two commas might be city-state  city-country, or lat-long pair
-    if len(params) == 2:
-
-        state = params[1]
-
-        # Check to see if a lat, long pair is being passed. This could be done
-        # more completely with regex, and converting from DMS to decimal
-        # degrees. This is nice and simple, however.
-        try:
-            float(loc)
-            float(state)
-
-            loc = loc + ',' + state
-            state = ''
-        except ValueError:
+        loc = loc + ',' + state
+        state = ''
+    except ValueError:
+        if state:
+            state = http.quote_plus(state)
             state += '/'
 
-    # Assume three commas is a city-state-country triplet. Discard the state
-    # portion because that's what the API expects
-    elif len(params) == 3:
-        loc = params[0]
-        state = params[2] + '/'
+        loc = http.quote_plus(loc)
 
     url = 'http://api.wunderground.com/api/'
     query = '{key}/geolookup/conditions/forecast/q/{state}{loc}.json' \
@@ -128,8 +117,7 @@ def weather(inp, chan='', nick='', reply=None, db=None, api_key=None):
     lon = float(obs['display_location']['longitude'])
 
     if inp and not dontsave:
-        db.execute("insert or replace into "
-                   "location(chan, nick, loc, lat, lon) "
-                   "values (?, ?, ?, ?, ?)",
-                   (chan, nick.lower(), inp, lat, lon))
+        cur.execute("insert or replace into location(chan, nick, loc, lat, lon) "
+                   "values (%s, %s, %s, %s,%s);", (chan, nick.lower(), inp, lat, lon))
         db.commit()
+        cur.close()
