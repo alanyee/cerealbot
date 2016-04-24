@@ -31,11 +31,14 @@ def get_video_description(vid_id, api_key):
     likes = j['statistics'].get('likeCount', 0)
     dislikes = j['statistics'].get('dislikeCount', 0)
     
+#    out = (u'\x02{snippet[title]}\x02 - length \x02{duration}\x02 - '
+#           u'{likes}\u2191{dislikes}\u2193 - '
+#           u'\x02{views}\x02 views - '
+#           u'\x02{snippet[channelTitle]}\x02 on \x02{published}\x02'
+#          ).format(duration=duration, likes=likes, dislikes=dislikes, views=views, published=published, **j)
     out = (u'\x02{snippet[title]}\x02 - length \x02{duration}\x02 - '
-           u'{likes}\u2191{dislikes}\u2193 - '
-           u'\x02{views}\x02 views - '
-           u'\x02{snippet[channelTitle]}\x02 on \x02{published}\x02'
-          ).format(duration=duration, likes=likes, dislikes=dislikes, views=views, published=published, **j)
+           u'\x02{snippet[channelTitle]}\x02'
+          ).format(duration=duration, **j)
 
     # TODO: figure out how to detect NSFW videos
 
