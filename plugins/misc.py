@@ -206,7 +206,7 @@ def thanks(match, nick=''):
 
 @hook.command()
 def source(inp):
-    return "https://github.com/rohan166/skybot"
+    return "https://github.com/rohan166/cerealbot"
 
 @hook.regex(r'^\x01VERSION\x01$')
 def version(inp, notice=None):
