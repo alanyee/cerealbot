@@ -136,13 +136,13 @@ def command(inp, say=None):
 @hook.regex(r'^unzzz$')
 def unzzz(inp, nick='', say=None):
     sweet_princes = ['arnog', 'ajohn', 'dymk', 'rray', 'tetranoir',  'rhaps0dy', 'mike_pizza']
-    if nick in sleeplist:
+    if nick in sweet_princes:
         say("good morning "+nick+"1")
 
 @hook.regex(r'^zzz$')
 def zzz(inp, nick='', say=None):
     sweet_princes = ['arnog', 'ajohn', 'dymk', 'rray', 'tetranoir',  'rhaps0dy', 'mike_pizza']
-    if nick in sleeplist:
+    if nick in sweet_princes:
         say("good night sweet prince")
 
 @hook.regex(r'^trust nobody$')
