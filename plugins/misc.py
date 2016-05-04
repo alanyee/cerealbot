@@ -137,7 +137,7 @@ def command(inp, say=None):
 def unzzz(inp, nick='', say=None):
     sweet_princes = ['arnog', 'ajohn', 'dymk', 'rray', 'tetranoir',  'rhaps0dy', 'mike_pizza']
     if nick in sweet_princes:
-        say("good morning "+nick+"1")
+        say("good morning "+nick)
 
 @hook.regex(r'^zzz$')
 def zzz(inp, nick='', say=None):
