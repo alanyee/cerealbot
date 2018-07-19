@@ -20,7 +20,7 @@ Meant to be extended by the #ucsd.
 
 ==Requirements==
 To install dependencies, run:
-
-    pip install -r requirements.txt
-
+{{{
+pip install -r requirements.txt
+}}}
 cerealbot runs on Python 2.7.
